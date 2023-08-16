@@ -1,6 +1,6 @@
 import zio._
 import zio.http._
-import zio.json._
+
 import ujson.Value.Value
 
 import java.io.IOException
@@ -9,13 +9,13 @@ sealed trait SimpleError extends Throwable with Product with Serializable
 object SimpleError {
   case class ReadFail(cause: Throwable) extends SimpleError
   case class FindFriendsFail(cause: Throwable) extends SimpleError
+  case class WriteFail(cause: Throwable) extends SimpleError
 }
 sealed trait SimpleReport extends Product with Serializable
-  object SimpleReport {
-    case class FailGenerateReport(cause: SimpleError) extends SimpleReport
-    case class SuccessGenerateReport(message: String) extends SimpleReport
-  }
-
+object SimpleReport {
+  case class FailGenerateReport(cause: SimpleError) extends SimpleReport
+  case class SuccessGenerateReport(message: String) extends SimpleReport
+}
 
 object ServerExample extends ZIOAppDefault {
   val path = os.pwd / "fixture"
@@ -30,26 +30,13 @@ object ServerExample extends ZIOAppDefault {
     } yield json.toString()
 
   val app =
-    Http.collectZIO[Request] {
-      case Method.GET -> Root / "reporting-test" =>
-        for {
-          _ <- zio.Console.printLine("/reporting-test endpoint!")
-          data <- readJson("friends.txt")
-          _ <- zio.Console.printLine(data)
-        } yield Response.json(data)
+    Http.collectZIO[Request] { case Method.GET -> Root / "reporting-test" =>
+      for {
+        _ <- zio.Console.printLine("/reporting-test endpoint!")
+        data <- readJson("friends.txt")
+        _ <- zio.Console.printLine(data)
+      } yield Response.json(data)
     }
-
-  case class Friend(
-      name: String,
-      age: Int,
-      hobbies: List[String],
-      location: String
-  )
-
-  object Friend {
-    implicit val decoder: JsonDecoder[Friend] = DeriveJsonDecoder.gen[Friend]
-    implicit val encoder: JsonEncoder[Friend] = DeriveJsonEncoder.gen[Friend]
-  }
 
   override val run =
     Server
