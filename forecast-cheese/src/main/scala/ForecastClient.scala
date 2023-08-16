@@ -6,7 +6,7 @@ import ujson.Value.Value
 
 import java.time.{LocalDate, LocalTime}
 
-object ForecastClient extends ZIOAppDefault{
+object ForecastClient extends ZIOAppDefault {
 
   case class RequestPayload(content: String)
   case class ResponsePayload(data: String)
@@ -19,19 +19,18 @@ object ForecastClient extends ZIOAppDefault{
     for {
       _ <- ZIO.unit
       regions <- ZIO.succeed(getRegions)
-      messages <- ZIO.foreach(regions) {
-        region =>
-          for {
-            _ <- ZIO.unit
-            body = getApiResponse(region.forecastApiUrl(today, now)).body
-            json <- readJson(body).mapError(SimpleError.ReadFail)
-            items <- getItemsFromJson(json)
-            message = s"> **${region.name} 날씨($today)** \n$items"
-          } yield message
+      messages <- ZIO.foreach(regions) { region =>
+        for {
+          _ <- ZIO.unit
+          body = getApiResponse(region.forecastApiUrl(today, now)).body
+          json <- readJson(body).mapError(SimpleError.ReadFail)
+          items <- getItemsFromJson(json)
+          message = s"> **${region.name} 날씨($today)** \n$items"
+        } yield message
       }
       discordMessage = messages.mkString("\n")
       _ <- sendDiscordMessage(discordMessage)
-    } yield()
+    } yield ()
   }
 
   def getRegions: List[Region] = {
@@ -58,34 +57,43 @@ object ForecastClient extends ZIOAppDefault{
     } yield json
 
   def getItemsFromJson(json: Value): ZIO[Any, Throwable, String] = {
-    ZIO.attempt {
-      val items = json("response")("body")("items")("item").arr
-      items
-        .filter(item => item.obj("category").str == "RN1")
-        .map(item => convertItemToMessage(item))
-        .mkString
-    }.catchAll(_ => {ZIO.succeed("> 정보 없음\n")})
+    ZIO
+      .attempt {
+        val items = json("response")("body")("items")("item").arr
+        items
+          .filter(item => item.obj("category").str == "RN1")
+          .map(item => convertItemToMessage(item))
+          .mkString
+      }
+      .catchAll(_ => { ZIO.succeed("> 정보 없음\n") })
   }
 
   def convertItemToMessage(item: Value): String = {
     s"> ${item.obj("fcstTime").str.substring(0, 2)}시 : ${item.obj("fcstValue").str} \n"
   }
 
-  def sendDiscordMessage(message: String): ZIO[Any, Exception, Identity[Response[Either[ResponseException[String, String], ResponsePayload]]]] = {
+  def sendDiscordMessage(message: String): ZIO[Any, Exception, Identity[
+    Response[Either[ResponseException[String, String], ResponsePayload]]
+  ]] = {
     val backend: SttpBackend[Identity, Any] = HttpClientSyncBackend()
 
-    implicit val payloadJsonEncoder: JsonEncoder[RequestPayload] = DeriveJsonEncoder.gen[RequestPayload]
-    implicit val myResponseJsonDecoder: JsonDecoder[ResponsePayload] = DeriveJsonDecoder.gen[ResponsePayload]
+    implicit val payloadJsonEncoder: JsonEncoder[RequestPayload] =
+      DeriveJsonEncoder.gen[RequestPayload]
+    implicit val myResponseJsonDecoder: JsonDecoder[ResponsePayload] =
+      DeriveJsonDecoder.gen[ResponsePayload]
 
     val requestPayload = RequestPayload(message)
-    val response: Identity[Response[Either[ResponseException[String, String], ResponsePayload]]] =
+    val response: Identity[
+      Response[Either[ResponseException[String, String], ResponsePayload]]
+    ] =
       basicRequest
         .post(uri"${MyKeyUtil.discordUri}")
         .body(requestPayload)
         .response(asJson[ResponsePayload])
         .send(backend)
 
-    ZIO.attempt(response)
+    ZIO
+      .attempt(response)
       .catchAll(_ => ZIO.fail(new Exception(s"discord send fail")))
   }
 }

@@ -1,7 +1,13 @@
 package report
 
 import sttp.client3.ziojson.asJson
-import sttp.client3.{HttpClientSyncBackend, Identity, SttpBackend, UriContext, basicRequest}
+import sttp.client3.{
+  HttpClientSyncBackend,
+  Identity,
+  SttpBackend,
+  UriContext,
+  basicRequest
+}
 import zio.json.DecoderOps
 import zio.{ZIO, ZIOAppDefault}
 
@@ -25,7 +31,6 @@ object Reporting extends ZIOAppDefault {
         ZIO.succeed(friend)
     }
   } yield f
-
 
   override def run = for {
     json <- ZIO

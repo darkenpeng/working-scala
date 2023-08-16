@@ -18,6 +18,3 @@ Banana(0.5).toJsonPretty
 //{
 //  "curvature" : 0.5
 //}
-
-
-

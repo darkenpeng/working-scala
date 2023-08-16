@@ -8,7 +8,8 @@ import java.io.IOException
 
 object Tabling extends ZIOAppDefault {
 
-  def readLine(message: String): IO[IOException, String] = zio.Console.readLine(message)
+  def readLine(message: String): IO[IOException, String] =
+    zio.Console.readLine(message)
 
   val prog = for {
     _ <- ZIO.unit
@@ -31,7 +32,8 @@ object Tabling extends ZIOAppDefault {
     isExist <- database
       .transactionOrWiden(for {
         res <- tzio {
-          sql"""|select EXISTS(select * from restaurant where id = ${Integer.parseInt(restaurant_id)})""".stripMargin
+          sql"""|select EXISTS(select * from restaurant where id = ${Integer
+            .parseInt(restaurant_id)})""".stripMargin
             .query[Boolean]
             .unique
         }
@@ -67,20 +69,30 @@ object Tabling extends ZIOAppDefault {
     }
   } yield ()
 
-  def readReservation(restaurant_id: String): ZIO[Any, IOException, Reservation] = for {
+  def readReservation(
+      restaurant_id: String
+  ): ZIO[Any, IOException, Reservation] = for {
     name <- readLine("예약자 이름을 입력해주세요 : ")
     phone <- readLine("예약자 전화번호 뒤 4자리를 입력해주세요 : ")
     reservation_date <- readLine("예약 날짜를 입력해주세요 (ex:0730) : ")
     reservation_time <- readLine("예약 시간을 입력해주세요 (ex:1430) : ")
     guests <- readLine("인원 수를 숫자로 입력해주세요 : ")
 
-    reservation = Reservation(name, phone, Integer.parseInt(restaurant_id), reservation_date, reservation_time, Integer.parseInt(guests))
+    reservation = Reservation(
+      name,
+      phone,
+      Integer.parseInt(restaurant_id),
+      reservation_date,
+      reservation_time,
+      Integer.parseInt(guests)
+    )
   } yield reservation
 
   override def run = prog
     .provide(
       conn >>> ConnectionSource.fromConnection >>> Database.fromConnectionSource
-    ).exitCode
+    )
+    .exitCode
 
   private val conn = ZLayer(
     ZIO.attempt(

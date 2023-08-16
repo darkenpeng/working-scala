@@ -37,14 +37,15 @@ object DiExam2 extends ZIOAppDefault {
     _ <- 예약정보등록하기(input)
   } yield ()
 
-  def useCaseUsingZLayer(): ZIO[식당저장소, IOException, Unit] = for { // 항상 Any로 있던게 식당저장소가 됐다... 의존성과 진짜 input을 분리할 수 있게됨!!!
-     repo <- ZIO.service[식당저장소]
-    _ <- ZIO.unit
-    list <- repo.모든식당이름가져오기()
-    _ <- zio.Console.printLine(list)
-    input <- zio.Console.readLine("입력 : ")
-    _ <- 예약정보등록하기(input)
-  } yield ()
+  def useCaseUsingZLayer(): ZIO[식당저장소, IOException, Unit] =
+    for { // 항상 Any로 있던게 식당저장소가 됐다... 의존성과 진짜 input을 분리할 수 있게됨!!!
+      repo <- ZIO.service[식당저장소]
+      _ <- ZIO.unit
+      list <- repo.모든식당이름가져오기()
+      _ <- zio.Console.printLine(list)
+      input <- zio.Console.readLine("입력 : ")
+      _ <- 예약정보등록하기(input)
+    } yield ()
 
   override def run = for {
     _ <- ZIO.unit

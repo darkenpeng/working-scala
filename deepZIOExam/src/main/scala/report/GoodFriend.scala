@@ -1,4 +1,3 @@
 package report
 
-case class GoodFriend(name: String,
-                      age: Int)
+case class GoodFriend(name: String, age: Int)

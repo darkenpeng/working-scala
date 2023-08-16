@@ -1,3 +1,1 @@
-object SimpleUtil {
-
-}
+object SimpleUtil {}
