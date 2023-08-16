@@ -8,19 +8,6 @@ import zio.json.{
   JsonDecoder,
   JsonEncoder
 }
-
-case class Friend(
-    name: String,
-    age: Int,
-    hobbies: List[String],
-    location: String
-)
-
-object Friend {
-  implicit val decoder: JsonDecoder[Friend] = DeriveJsonDecoder.gen[Friend]
-  implicit val encoder: JsonEncoder[Friend] = DeriveJsonEncoder.gen[Friend]
-}
-
 object Client extends ZIOAppDefault {
   val prog = for {
     _ <- ZIO.unit
@@ -40,7 +27,12 @@ object Client extends ZIOAppDefault {
   override def run = for {
     friendList <- prog
     _ <- zio.Console.printLine(friendList)
-    
-  } yield ()
+    data = friendList.toJson
+    // TODO path 하드코딩...더 나은 방법이 있을지 찾아보기...
+    wd = os.pwd / "filter-example" / "src" / "main" / "scala" / "friends.json"
+    res <- ZIO
+      .attempt(os.write(wd, data))
+      .catchAll(cause => ZIO.fail(SimpleError.WriteFail(cause)))
 
+  } yield ()
 }
